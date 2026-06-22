@@ -11,15 +11,19 @@ A production-style FastAPI + Streamlit system for statistical reliability scorin
 This project extends internship research on IoMT sensor reliability into a deployable service. A composite statistical score (R) is computed per 30-sample window by combining within-sensor consistency, temporal stability, and cross-sensor correlation — discriminating normal sensor behavior from anomalies and network attacks without using labels at inference time.
 
 ## Architecture
-┌─────────────┐      ┌──────────────┐      ┌─────────────────┐
+## Architecture
 
-│  Scoring     │ ───► │   FastAPI    │ ───► │   Streamlit      │
+```mermaid
+flowchart LR
+    A[("13 CSV Datasets<br/>Real + DL-generated readings")] --> B["Scoring Engine<br/>models/scorer.py<br/><br/>S_within · S_temporal · S_cross"]
+    B --> C["FastAPI Service<br/>api/main.py<br/><br/>REST endpoints"]
+    C --> D["Streamlit Dashboard<br/>dashboard/app.py<br/><br/>Live visualization"]
 
-│  Engine      │      │   REST API   │      │   Dashboard      │
-
-│ (scorer.py)  │      │  (main.py)   │      │   (app.py)       │
-
-└─────────────┘      └──────────────┘      └─────────────────┘
+    style A fill:#142133,stroke:#3DDC97,color:#fff
+    style B fill:#142133,stroke:#3DDC97,color:#fff
+    style C fill:#142133,stroke:#3DDC97,color:#fff
+    style D fill:#142133,stroke:#3DDC97,color:#fff
+```
 ## Methodology
 
 **Composite score:** R = 0.70·S_within + 0.15·S_temporal + 0.15·S_cross  (weights derived via Fisher Discriminant Ratio)
