@@ -11,7 +11,6 @@ A production-style FastAPI + Streamlit system for statistical reliability scorin
 This project extends internship research on IoMT sensor reliability into a deployable service. A composite statistical score (R) is computed per 30-sample window by combining within-sensor consistency, temporal stability, and cross-sensor correlation — discriminating normal sensor behavior from anomalies and network attacks without using labels at inference time.
 
 ## Architecture
-## Architecture
 
 ```mermaid
 flowchart LR

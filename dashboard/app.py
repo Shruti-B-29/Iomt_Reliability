@@ -1,32 +1,68 @@
 import streamlit as st
-import requests
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
+import os
+import sys
+
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from models.scorer import score_condition
 
 st.set_page_config(page_title="IoMT Reliability Dashboard", page_icon="🩺", layout="wide")
 
-import os
-API_URL = os.environ.get("API_URL", "http://localhost:8000")
+BASE_DIR  = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATA_PATH = os.path.join(BASE_DIR, 'data')
+
+ALL_CONDITIONS = {
+    'normal':               'pulse_oximeter_normal_normal.csv',
+    'noise':                'pulse_oximeter_device_anomaly_noise.csv',
+    'freeze':               'pulse_oximeter_device_anomaly_freeze.csv',
+    'drift':                'pulse_oximeter_device_anomaly_drift.csv',
+    'packet_loss':          'pulse_oximeter_device_anomaly_packet_loss.csv',
+    'bradycardia':          'pulse_oximeter_patient_anomaly_bradycardia.csv',
+    'tachycardia':          'pulse_oximeter_patient_anomaly_tachycardia.csv',
+    'hypoxemia':            'pulse_oximeter_patient_anomaly_hypoxemia.csv',
+    'rapid_drop':           'pulse_oximeter_patient_anomaly_rapid_drop.csv',
+    'replay_attack':        'pulse_oximeter_attack_replay_attack.csv',
+    'false_data_injection': 'pulse_oximeter_attack_false_data_injection.csv',
+    'selective_forwarding': 'pulse_oximeter_attack_selective_forwarding.csv',
+    'temporal_attack':      'pulse_oximeter_attack_temporal_attack.csv',
+}
+
+@st.cache_data(ttl=3600)
+def fetch_all_scores():
+    results = {}
+    for name, fname in ALL_CONDITIONS.items():
+        fpath = os.path.join(DATA_PATH, fname)
+        df = pd.read_csv(fpath)
+        r = score_condition(df)
+        results[name] = {
+            "R_mean": r['R_mean'], "R_std": r['R_std'],
+            "S_within": r['S_within'], "S_temporal": r['S_temporal'], "S_cross": r['S_cross'],
+            "status": r['status'], "n_windows": r['n_windows'],
+        }
+    ranked = dict(sorted(results.items(), key=lambda x: x[1]['R_mean'], reverse=True))
+    return {
+        "summary": ranked,
+        "normal_R": results['normal']['R_mean'],
+        "lowest_R": min(v['R_mean'] for v in ranked.values()),
+        "all_normal_highest": all(
+            results['normal']['R_mean'] > v['R_mean']
+            for k, v in ranked.items() if k != 'normal'
+        )
+    }
+
+@st.cache_data(ttl=3600)
+def fetch_condition(name):
+    fpath = os.path.join(DATA_PATH, ALL_CONDITIONS[name])
+    df = pd.read_csv(fpath)
+    return score_condition(df)
 
 st.title("🩺 IoMT Pulse Oximeter Reliability Dashboard")
 st.markdown("**Statistical Reliability Scoring · R = 0.70·S_within + 0.15·S_temporal + 0.15·S_cross**")
 st.markdown("---")
 
-
-
-# ── Fetch all scores ──────────────────────────────────────────
-@st.cache_data(ttl=30)
-def fetch_all_scores():
-    r = requests.get(f"{API_URL}/score/all", timeout=10)
-    r.raise_for_status()
-    return r.json()
-
-try:
-    data = fetch_all_scores()
-except Exception as e:
-    st.error(f"Could not connect to API at {API_URL}. Make sure uvicorn is running. Error: {e}")
-    st.stop()
+data = fetch_all_scores()
 
 summary = data['summary']
 df = pd.DataFrame(summary).T.reset_index().rename(columns={'index': 'condition'})
@@ -67,7 +103,7 @@ st.plotly_chart(fig, use_container_width=True)
 st.markdown("---")
 
 # ── Sub-score breakdown ───────────────────────────────────────
-st.subheader(" Sub-Score Breakdown")
+st.subheader("Sub-Score Breakdown")
 col1, col2 = st.columns([2,1])
 
 with col1:
@@ -99,14 +135,8 @@ st.dataframe(display_df, use_container_width=True, hide_index=True)
 st.markdown("---")
 
 # ── Single condition deep-dive ─────────────────────────────────
-st.subheader(" Per-Window Deep Dive")
+st.subheader("Per-Window Deep Dive")
 selected = st.selectbox("Select a condition to inspect window-by-window scores", df['condition'].tolist())
-
-@st.cache_data(ttl=30)
-def fetch_condition(name):
-    r = requests.get(f"{API_URL}/score/condition/{name}", timeout=10)
-    r.raise_for_status()
-    return r.json()
 
 detail = fetch_condition(selected)
 windows_df = pd.DataFrame(detail['per_window'])
@@ -122,4 +152,4 @@ fig3.update_layout(title=f"R Score per Window — {selected}", height=350,
                     xaxis_title="Window Index", yaxis_title="R Score")
 st.plotly_chart(fig3, use_container_width=True)
 
-st.caption("Built with FastAPI · Streamlit · Plotly | Backend: composite statistical reliability scoring")
+st.caption("Built with FastAPI (local) · Streamlit · Plotly | Backend: composite statistical reliability scoring")
