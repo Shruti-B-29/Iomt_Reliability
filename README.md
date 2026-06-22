@@ -4,7 +4,7 @@
 
 A production-style FastAPI + Streamlit system for statistical reliability scoring of IoMT pulse oximeter data, distinguishing normal operation from 12 device-anomaly, patient-anomaly, and cyberattack conditions using real sensor data.
 
-**🔗 Live API Docs:** [http://localhost:8000/docs#/default/score_all_conditions_score_all_get] · **🔗 Live Dashboard:** [your-link-here]
+**🔗 Live API Docs:** [http://localhost:8000/docs#/default/score_all_conditions_score_all_get] · **🔗 Live Dashboard:** [https://shruti-b-29-iomt-reliability-dashboardapp-24nzlj.streamlit.app/]
 
 ## Overview
 
