@@ -4,7 +4,7 @@
 
 A production-style FastAPI + Streamlit system for statistical reliability scoring of IoMT pulse oximeter data, distinguishing normal operation from 12 device-anomaly, patient-anomaly, and cyberattack conditions using real sensor data.
 
-**🔗 Live API Docs:** [http://localhost:8000/docs#/default/score_all_conditions_score_all_get] · **🔗 Live Dashboard:** [your-link-here]
+** Live Dashboard:** [https://shruti-b-29-iomt-reliability-dashboardapp-24nzlj.streamlit.app/]
 
 ## Overview
 
@@ -23,6 +23,18 @@ flowchart LR
     style C fill:#142133,stroke:#3DDC97,color:#fff
     style D fill:#142133,stroke:#3DDC97,color:#fff
 ```
+## Note on Deployment
+
+The **Streamlit dashboard** is deployed publicly (see link above) and calls the scoring engine directly for fast, dependency-free hosting.
+
+The **FastAPI service** (`api/main.py`) is a fully working REST API layer included in this repo — it demonstrates the scoring engine wrapped as a production-style service with proper endpoints, request validation, and auto-generated documentation. It runs locally (not deployed publicly) and can be tested with:
+
+```bash
+uvicorn api.main:app --reload --port 8000
+```
+
+Then visit `http://localhost:8000/docs` for interactive Swagger documentation.
+
 ## Methodology
 
 **Composite score:** R = 0.70·S_within + 0.15·S_temporal + 0.15·S_cross  (weights derived via Fisher Discriminant Ratio)
